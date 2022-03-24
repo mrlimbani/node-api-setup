@@ -1,4 +1,5 @@
 var createError = require('http-errors');
+const httpStatus = require('http-status');
 var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
@@ -8,6 +9,10 @@ var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
 
 var app = express();
+
+const ApiError = require('./src/utils/ApiError');
+const { errorConverter, errorHandler } = require('./src/middlewares/error');
+
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -23,19 +28,14 @@ app.use('/', indexRouter);
 app.use('/users', usersRouter);
 
 // catch 404 and forward to error handler
-app.use(function(req, res, next) {
-  next(createError(404));
+app.use((req, res, next) => {
+  next(new ApiError(httpStatus.NOT_FOUND, 'Page Not found'));
 });
 
-// error handler
-app.use(function(err, req, res, next) {
-  // set locals, only providing error in development
-  res.locals.message = err.message;
-  res.locals.error = req.app.get('env') === 'development' ? err : {};
+// convert error to ApiError, if needed
+app.use(errorConverter);
 
-  // render the error page
-  res.status(err.status || 500);
-  res.render('error');
-});
+// handle error
+app.use(errorHandler);
 
 module.exports = app;
